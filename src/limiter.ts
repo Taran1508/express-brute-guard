@@ -40,8 +40,11 @@ export class BruteGuard {
 
   private isBlocked(res: any, exist: any): boolean {
     if (exist.blockExpiresAt && Date.now() < exist.blockExpiresAt) {
-      this.blockDuration = exist.blockDuration;
+      this.blockDuration = exist.blockExpiresAt;
       if (this.headers) {
+        //Enable console.logs for detailed flow while testing
+        // console.log('isBlocked X-RateLimit-Reset', this.resetTime);
+        // console.log('isBlocked Retry-After', this.blockDuration);
         res.setHeader('Retry-After', this.blockDuration);
       }
       res.status(this.statusCode).json({ message: `${this.errormessage}` });
@@ -49,45 +52,43 @@ export class BruteGuard {
     }
     return false;
   }
-  private incrementRequest(exist: any, ipAddress: string): void {
-    if (exist) {
-      exist.requestCount++;
-      this.store.updateIp(ipAddress, {
-        firstRequestTime: exist.firstRequestTime,
-        windowMs: exist.windowMs,
-        blockExpiresAt: exist.blockExpiresAt,
-        requestCount: exist.requestCount,
-      });
+  private incrementRequest(res: any, exist: any, ipAddress: string): boolean {
+    if (exist?.requestCount >= this.maxRequests) {
+      if (this.headers) {
+        //Enable console.logs for detailed flow while testing
+        // console.log('incrementRequest X-RateLimit-Reset', this.resetTime);
+        // console.log('incrementRequest Retry-After', this.blockDuration);
+        res.setHeader('X-RateLimit-Reset', this.resetTime);
+        res.setHeader('Retry-After', this.blockDuration);
+      }
+      this.store.updateIp(
+        ipAddress,
+        exist.requestCount,
+        exist.firstRequestTime,
+        exist.windowMs,
+        Date.now() + this.blockDuration
+      );
+      res.status(this.statusCode).json({ message: `${this.errormessage}` });
+      return true;
     }
+    exist.requestCount++;
+    //Enable console.logs for detailed flow while testing
+    // console.log('[Increment] requestCount:', exist.requestCount);
+    this.store.updateIp(
+      ipAddress,
+      exist.requestCount,
+      exist.firstRequestTime,
+      exist.windowMs,
+      null
+    );
+
+    return false;
   }
 
   // If the IP is already present, increment the request count
   private checkIpExist(res: any, exist: any, ipAddress: string): boolean {
-    if (exist && this.isBlocked(res, exist)) {
-      return true;
-    }
-    if (exist) {
-      this.incrementRequest(exist, ipAddress);
-    }
-    return false;
-  }
-
-  // Check rate limit
-  private checkIpLimit(res: any, exist: any, ipAddress: string): boolean {
-    if (exist?.requestCount > this.maxRequests) {
-      if (this.headers) {
-        res.setHeader('X-RateLimit-Reset', this.resetTime);
-        res.setHeader('Retry-After', this.blockDuration);
-      }
-      this.store.updateIp(ipAddress, {
-        requestCount: exist.requestCount,
-        firstRequestTime: exist.firstRequestTime,
-        windowMs: exist.windowMs,
-        blockExpiresAt: Date.now() + this.blockDuration,
-      });
-      res.status(this.statusCode).json({ message: `${this.errormessage}` });
-      return true;
-    }
+    if (exist && this.isBlocked(res, exist)) return true;
+    if (exist && this.incrementRequest(res, exist, ipAddress)) return true;
     return false;
   }
 
@@ -97,42 +98,68 @@ export class BruteGuard {
 
     // If the IP is already present, increment the request count
     if (this.checkIpExist(res, exist, ipAddress)) {
+      //Enable console.logs for detailed flow while testing
+      //console.log('[Guard] Blocked IP – no next()');
       return;
     }
 
     // If the IP doesn't exist, create a new entry
     if (!exist) {
-      this.store.setIp(ipAddress, {
-        maxRequests: this.maxRequests,
-        requestCount: 1,
-        firstRequestTime: Date.now(),
-        windowMs: Date.now() + this.windowMs,
-      });
+      //Enable console.logs for detailed flow while testing
+      //console.log('[Guard] New IP – calling next()');
+      this.store.setIp(
+        ipAddress,
+        this.maxRequests,
+        1,
+        Date.now(),
+        Date.now() + this.windowMs
+      );
+      if (this.headers) {
+        //Enable console.logs for detailed flow while testing
+        // console.log('Setting headers:', this.maxRequests, this.maxRequests - 1);
+        // console.log('X-RateLimit-Limit', this.maxRequests);
+        // console.log('X-RateLimit-Remaining', this.maxRequests - 1);
+        res.setHeader('X-RateLimit-Limit', this.maxRequests);
+        res.setHeader('X-RateLimit-Remaining', this.maxRequests - 1);
+      }
+      //console.log('New IP [Increment] requestCount:', 1);
       return next();
     }
 
     // Reset if window expired
-    if (exist && Date.now() > exist.windowMs) {
-      this.store.resetIp(ipAddress, {
-        requestCount: 0,
-        firstRequestTime: Date.now(),
-        windowMs: this.windowMs,
-      });
+    if (Date.now() > exist.windowMs) {
+      //Enable console.logs for detailed flow while testing
+      //console.log('[Guard] Window expired –reset - calling next()');
+      this.store.resetIp(ipAddress, 0, Date.now(), this.windowMs, null);
       return next();
     }
 
-    // Check rate limit
-    if (this.checkIpLimit(res, exist, ipAddress)) {
-      return;
-    }
     // If passed all checks
     if (this.headers) {
+      //Enable console.logs for detailed flow while testing
+      // console.log(
+      //   'Setting headers - final:',
+      //   this.maxRequests,
+      //   this.maxRequests - (exist?.requestCount || 0)
+      // );
+      // console.log(
+      //   'If passed all checks' + 'X-RateLimit-Limit',
+      //   this.maxRequests
+      // );
+      // console.log(
+      //   'If passed all checks' + 'X-RateLimit-Remaining',
+      //   this.maxRequests - (exist?.requestCount || 0)
+      // );
+
       res.setHeader('X-RateLimit-Limit', this.maxRequests);
       res.setHeader(
         'X-RateLimit-Remaining',
-        Math.max(this.maxRequests - exist.requestCount, 0)
+        this.maxRequests - (exist?.requestCount || 0)
       );
     }
+
+    //Enable console.logs for detailed flow while testing
+    //console.log('[Guard] Final fallback next()');
     next();
   }
 }

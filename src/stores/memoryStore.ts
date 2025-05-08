@@ -1,4 +1,4 @@
-interface MemoryEntry {
+export interface MemoryEntry {
   maxRequests?: number;
   requestCount: number;
   firstRequestTime: number;
@@ -17,12 +17,11 @@ export default class memoryStore {
 
   // Method to set data for an ipAddress in memoryMap
   setIp(
-    maxRequests: number,
     ipAddress: string,
+    maxRequests: number,
     requestCount: number,
     firstRequestTime: number,
-    windowMs: number,
-    blockExpiresAt?: number
+    windowMs: number
   ) {
     // Store the values in memoryMap with ipAddress as the key
     this.memoryMap.set(ipAddress, {
@@ -30,7 +29,6 @@ export default class memoryStore {
       requestCount,
       firstRequestTime,
       windowMs,
-      blockExpiresAt,
     });
   }
 
@@ -38,6 +36,7 @@ export default class memoryStore {
   updateIp(
     ipAddress: string,
     requestCount: number,
+    maxRequests: number,
     firstRequestTime: number,
     windowMs: number,
     blockExpiresAt?: number
@@ -48,6 +47,7 @@ export default class memoryStore {
       this.memoryMap.set(ipAddress, {
         ...existing,
         requestCount,
+        maxRequests,
         firstRequestTime,
         windowMs,
         blockExpiresAt,
@@ -60,7 +60,7 @@ export default class memoryStore {
     requestCount: number,
     firstRequestTime: number,
     windowMs: number,
-    blockExpiresAt?: number
+    blockExpiresAt: number
   ) {
     const existing = this.memoryMap.get(ipAddress);
     if (existing) {
@@ -84,7 +84,8 @@ export default class memoryStore {
   // Method to delete data for an ipAddress in memoryMap
   deleteIp(ipAddress: string) {
     // Deletes the values in memoryMap with ipAddress as the key
-    return this.memoryMap.delete(ipAddress);
+    this.memoryMap.delete(ipAddress);
+    return `IP Data deleted: ${ipAddress}`;
   }
 
   // Method to clear only expired entries from the map
