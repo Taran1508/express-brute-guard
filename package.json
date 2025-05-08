@@ -1,7 +1,7 @@
 {
   "name": "express-brute-guard",
   "version": "1.0.0",
-  "description": "",
+  "description": "A customizable and production-ready rate-limiting middleware for Node.js.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -15,12 +15,32 @@
   ],
   "scripts": {
     "build": "tsc",
+    "dev": "ts-node-dev src/index.ts",
     "test": "jest"
   },
-  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Taran1508/express-brute-guard.git"
+  },
+  "keywords": [
+    "rate-limiter",
+    "express-middleware",
+    "security",
+    "brute-force-protection",
+    "nodejs",
+    "typescript",
+    "middleware"
+  ],
   "author": "Taran mesala",
-  "license": "ISC",
-  "type": "commonjs",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=16"
+  },
+  "bugs": {
+    "url": "https://github.com/Taran1508/express-brute-guard/issues"
+  },
+  "homepage": "https://github.com/Taran1508/express-brute-guard/",
   "dependencies": {
     "express": "^5.1.0",
     "mocha": "^11.2.2",

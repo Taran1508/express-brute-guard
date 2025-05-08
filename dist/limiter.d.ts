@@ -8,7 +8,7 @@ interface Metrics {
     store?: any;
     headers?: boolean;
 }
-declare class BruteGuard {
+export declare class BruteGuard {
     maxRequests: number;
     windowMs: number;
     blockDuration: number;
@@ -21,8 +21,8 @@ declare class BruteGuard {
     private isBlocked;
     private incrementRequest;
     private checkIpExist;
-    private checkIpLimit;
     createGuard(req: any, res: any, next: any): any;
 }
-export default BruteGuard;
+declare const bruteGuard: BruteGuard;
+export default bruteGuard;
 //# sourceMappingURL=limiter.d.ts.map

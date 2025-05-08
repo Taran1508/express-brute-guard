@@ -1,0 +1,37 @@
+# Ignore source and test files
+src/
+*.ts
+test/
+__tests__/
+*.test.ts
+coverage/
+
+# Ignore build tools/configs
+webpack.config.js
+babel.config.js
+jest.config.js
+tsconfig.json
+*.log
+
+# Ignore system/IDE files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore meta and internal directories
+.npmignore
+.gitignore
+.git/
+.github/
+
+# Ignore example or demo directories
+example/
+examples/
+demo/
