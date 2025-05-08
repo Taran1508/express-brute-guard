@@ -32,7 +32,7 @@ npm install express-brute-guard
 typescript
 
 import express from 'express';
-import BruteGuard from 'express-brute-guard';
+import { BruteGuard } from 'express-brute-guard';
 
 const app = express();
 
